@@ -5,7 +5,8 @@ jobs:
     name: deploy to cluster
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@master
+    - name: checkout branch
+      uses: actions/checkout@master
     - name: build and push to docker
       uses: docker/build-push-action@v1
       with:
@@ -15,7 +16,15 @@ jobs:
         repository: miglesiasmarchese/kubernetes-ci-cd
         tag_with_ref: true
         tag_with_sha: true
-        tags: ${{ github.sha }}
+        tags: ${{ github.sha }}        
+    - name: setup gcp
+      uses: GoogleCloudPlatform/github-actions/setup-gcloud@master
+      with:
+        # version: '290.0.1'
+        project_id: ${{ secrets.GCP_PROJECT_ID }}
+        service_account_key: ${{ secrets.GCP_SA_KEY }}
+        export_default_credentials: true
+    - run: gcloud info        
     - name: deploy to cluster
       uses: steebchen/kubectl@master
       env:
