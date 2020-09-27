@@ -1,3 +1,6 @@
 FROM nginx:1.19-alpine
 
-COPY index.xml /usr/share/nginx/html
+# CMD ls -la /usr/share/nginx/html
+
+ADD index.html /usr/share/nginx/html
+
