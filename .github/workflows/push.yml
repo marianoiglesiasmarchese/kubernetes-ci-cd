@@ -11,7 +11,21 @@ jobs:
       with:
         username: ${{ secrets.DOCKERHUB_USERNAME }}
         password: ${{ secrets.DOCKERHUB_PASSWORD }}
+        # repository: ${{ github.repository }}
         repository: miglesiasmarchese/kubernetes-ci-cd
         tag_with_ref: true
         tag_with_sha: true
         tags: ${{ github.sha }}
+    - name: deploy to cluster
+      uses: steebchen/kubectl@master
+      env:
+        KUBE_CONFIG_DATA: ${{ secrets.KUBE_CONFIG_DATA }}
+      with:
+        args: set image --record deployment/nginx-deployment nginx=miglesiasmarchese/kubernetes-ci-cd:${{ github.sha }}
+    - name: verify deployment
+      uses: steebchen/kubectl@master
+      env:
+        KUBE_CONFIG_DATA: ${{ secrets.KUBE_CONFIG_DATA }}
+        KUBECTL_VERSION: "1.15"
+      with:
+        args: '"rollout status deployment/nginx-deployment"'        
