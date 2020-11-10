@@ -1,7 +1,14 @@
 # kubernetes-ci-cd
 Continuous integration/deployment to GCP kubernetes cluster POC
+
+## Dependencies
+* Kotlin 1.3
+* Java 11
+* maven 3.6.1
+
 ## Link of interest
 * [**Branching strategy**](https://jeffkreeftmeijer.com/git-flow/)
+
 ## Docker file for local testing
 ```
 docker build --tag kubernetes-ci-cd .
@@ -12,6 +19,7 @@ to restart the container
 ```
 docker container start kubernetes-ci-cd
 ```
+
 #### Environment variables
 these variables should be added as part of the CI/CD process within the github project's secrets.
 ```
