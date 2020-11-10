@@ -11,11 +11,11 @@ jobs:
     steps:
       - name: checkout branch
         uses: actions/checkout@v1
-      - name: Set up JDK 11
+      - name: Set up JDK 11 # step required for JVM apps
         uses: actions/setup-java@v1
         with:
           java-version: 1.11
-      - name: Maven Verify
+      - name: Maven Verify # step required for JVM apps
         run: mvn -B clean verify
       - name: figure out namespace
         # namespaces values could be externalized as a secret
