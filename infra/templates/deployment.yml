@@ -1,0 +1,57 @@
+apiVersion: apps/v1 # for versions before 1.9.0 use apps/v1beta2
+kind: Deployment
+metadata:
+  name: kubernetes-ci-cd
+  labels:
+    # TODO should be externalized
+    environment: develop
+    tier : backend
+    app: kubernetes-ci-cd
+spec:
+  selector:
+    matchLabels:
+      app: kubernetes-ci-cd
+  revisionHistoryLimit: 2
+  template:
+    metadata:
+      labels:
+        app: kubernetes-ci-cd
+    spec:
+      containers:
+      - name: kubernetes-ci-cd
+        image: miglesiasmarchese/kubernetes-ci-cd:develop-4191de0082e65c7c76244055a80002d6ca3a2146
+#        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8080
+#        env:
+#          - name: AWS_ACCESS_KEY_ID
+#            valueFrom:
+#              secretKeyRef:
+#                name: {{ include "core.fullname" . }}
+#                key: iam-accesskey
+#          - name: AWS_SECRET_ACCESS_KEY
+#            valueFrom:
+#              secretKeyRef:
+#                name: {{ include "core.fullname" . }}
+#                key: iam-secret
+#           - name: DATASOURCE_URL
+#             value: jdbc:postgresql://{{ include "core.fullname" . }}-postgresql:5432/db_name
+        readinessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8080
+          initialDelaySeconds: 45
+#          periodSeconds: 10 # TODO by default are 10 seconds
+        livenessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8080
+          initialDelaySeconds: 60
+#          periodSeconds: 10 # TODO by default are 10 seconds
+        resources:
+          requests:
+            cpu: 300m
+            memory: 500Mi
+          limits:
+            cpu: 500m
+            memory: 700Mi
