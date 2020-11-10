@@ -1,40 +1,56 @@
-on: push
 name: deploy
+on:
+  push:
+    branches:
+      - develop
+      - master
 jobs:
   deploy:
     name: deploy to cluster
     runs-on: ubuntu-latest
     steps:
-    - name: checkout branch
-      uses: actions/checkout@master
-    - name: build and push to docker
-      uses: docker/build-push-action@v1
-      with:
-        username: ${{ secrets.DOCKERHUB_USERNAME }}
-        password: ${{ secrets.DOCKERHUB_PASSWORD }}
-        # repository: ${{ github.repository }}
-        repository: miglesiasmarchese/kubernetes-ci-cd
-        tag_with_ref: true
-        tag_with_sha: true
-        tags: ${{ github.sha }}        
-    - name: setup gcp
-      uses: GoogleCloudPlatform/github-actions/setup-gcloud@master
-      with:
-        # version: '290.0.1'
-        project_id: ${{ secrets.GCP_PROJECT_ID }}
-        service_account_key: ${{ secrets.GCP_SA_KEY }}
-        export_default_credentials: true
-    - run: gcloud info        
-    - name: deploy to cluster
-      uses: steebchen/kubectl@master
-      env:
-        KUBE_CONFIG_DATA: ${{ secrets.KUBE_CONFIG_DATA }}
-      with:
-        args: set image --record deployment/nginx-deployment nginx=miglesiasmarchese/kubernetes-ci-cd:${{ github.sha }}
-    - name: verify deployment
-      uses: steebchen/kubectl@master
-      env:
-        KUBE_CONFIG_DATA: ${{ secrets.KUBE_CONFIG_DATA }}
-        KUBECTL_VERSION: "1.15"
-      with:
-        args: '"rollout status deployment/nginx-deployment"'        
+      - name: checkout branch
+        uses: actions/checkout@v1
+      - name: Set up JDK 11
+        uses: actions/setup-java@v1
+        with:
+          java-version: 1.11
+      - name: Maven Verify
+        run: mvn -B clean verify
+      - name: figure out namespace
+        # namespaces values could be externalized as a secret
+        run: if ${{github.ref == 'refs/heads/master'}}; then echo '::set-env name=NAMESPACE::prod'; else echo '::set-env name=NAMESPACE::develop'; fi
+      - name: validate namespace
+        run: echo "$NAMESPACE"
+      - name: build and push to docker
+        uses: docker/build-push-action@v1
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+          # repository: ${{ github.repository }}
+          repository: miglesiasmarchese/kubernetes-ci-cd
+  #        tag_with_ref: true
+  #        tag_with_sha: true
+          tags: ${{ env.NAMESPACE }}-${{ github.sha }}
+      - name: setup gcp
+        uses: GoogleCloudPlatform/github-actions/setup-gcloud@master
+        with:
+          #version: '290.0.1'
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+          service_account_key: ${{ secrets.GCP_SA_KEY }}
+          export_default_credentials: true
+      - name: gcp info log
+        run: gcloud info
+      - name: deploy to cluster
+        uses: steebchen/kubectl@master
+        env:
+          KUBE_CONFIG_DATA: ${{ secrets.KUBE_CONFIG_DATA }}
+        with:
+          args: -n ${{ env.NAMESPACE }} set image --record deployment/kubernetes-ci-cd kubernetes-ci-cd=miglesiasmarchese/kubernetes-ci-cd:${{ env.NAMESPACE }}-${{ github.sha }}
+      - name: verify deployment
+        uses: steebchen/kubectl@master
+        env:
+          KUBE_CONFIG_DATA: ${{ secrets.KUBE_CONFIG_DATA }}
+          KUBECTL_VERSION: "1.15"
+        with:
+          args: -n ${{ env.NAMESPACE }} rollout status deployment/kubernetes-ci-cd
